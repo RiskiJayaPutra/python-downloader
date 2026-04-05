@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="YouTube Downloader - Unduh video YouTube ke format MP4 atau MP3 dengan mudah dan cepat.">
+    <title>YT Downloader - Unduh Video YouTube</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f4ff',
+                            100: '#e0e9ff',
+                            500: '#3b6cff',
+                            600: '#2952cc',
+                            700: '#1e3fa3',
+                        },
+                        surface: {
+                            0: '#ffffff',
+                            50: '#fafafa',
+                            100: '#f5f5f5',
+                            200: '#e5e5e5',
+                            300: '#d4d4d4',
+                            400: '#a3a3a3',
+                            500: '#737373',
+                            600: '#525252',
+                            700: '#404040',
+                            800: '#262626',
+                            900: '#171717',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons CDN -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+
+    <!-- Animate.css CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #fafafa;
+            color: #171717;
+        }
+
+        /* Custom spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2.5px solid #e5e5e5;
+            border-top-color: #3b6cff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        .spinner-lg {
+            width: 40px;
+            height: 40px;
+            border-width: 3.5px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Slide up animation */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-slide-up-delay-1 {
+            opacity: 0;
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+        }
+
+        .animate-slide-up-delay-2 {
+            opacity: 0;
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+        }
+
+        .animate-slide-up-delay-3 {
+            opacity: 0;
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+        }
+
+        /* Fade in */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease forwards;
+        }
+
+        /* Button hover lift */
+        .btn-lift {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-lift:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .btn-lift:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        /* Format toggle */
+        .format-option {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .format-option.active {
+            background-color: #171717;
+            color: #ffffff;
+            border-color: #171717;
+        }
+
+        .format-option:not(.active):hover {
+            border-color: #a3a3a3;
+            background-color: #f5f5f5;
+        }
+
+        /* Input focus ring */
+        .input-url:focus {
+            outline: none;
+            border-color: #171717;
+            box-shadow: 0 0 0 3px rgba(23, 23, 23, 0.08);
+        }
+
+        /* Progress bar */
+        .progress-bar-fill {
+            transition: width 0.3s ease;
+        }
+
+        /* Pulse */
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .animate-pulse-soft {
+            animation: pulse-soft 1.5s ease-in-out infinite;
+        }
+
+        /* Success checkmark */
+        @keyframes scaleIn {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .animate-scale-in {
+            animation: scaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="w-full border-b border-surface-200 bg-white">
+        <div class="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2.5 animate-slide-up">
+                <div class="w-8 h-8 bg-surface-900 rounded-lg flex items-center justify-center">
+                    <i class="ph-bold ph-play text-white text-sm"></i>
+                </div>
+                <span class="font-semibold text-lg text-surface-900 tracking-tight">YT Downloader</span>
+            </div>
+            <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener noreferrer"
+               class="text-surface-400 hover:text-surface-900 transition-colors animate-slide-up">
+                <i class="ph ph-github-logo text-xl"></i>
+            </a>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex items-start justify-center pt-16 sm:pt-24 px-4 pb-12">
+        <div class="w-full max-w-xl">
+
+            <!-- Title -->
+            <div class="text-center mb-10 animate-slide-up">
+                <h1 class="text-3xl sm:text-4xl font-bold text-surface-900 tracking-tight mb-3">
+                    Unduh Video YouTube
+                </h1>
+                <p class="text-surface-500 text-base sm:text-lg">
+                    Tempelkan link YouTube dan pilih format yang diinginkan.
+                </p>
+            </div>
+
+            <!-- Card -->
+            <div class="bg-white border border-surface-200 rounded-2xl p-6 sm:p-8 animate-slide-up-delay-1">
+
+                <!-- URL Input -->
+                <div class="mb-5">
+                    <label for="url-input" class="block text-sm font-medium text-surface-700 mb-2">
+                        <i class="ph ph-link text-base mr-1 align-middle"></i>
+                        Link YouTube
+                    </label>
+                    <input
+                        type="url"
+                        id="url-input"
+                        placeholder="https://www.youtube.com/watch?v=..."
+                        class="input-url w-full px-4 py-3.5 border border-surface-200 rounded-xl text-base text-surface-900 placeholder-surface-400 transition-all"
+                    >
+                </div>
+
+                <!-- Format Selection -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-surface-700 mb-2">
+                        <i class="ph ph-sliders-horizontal text-base mr-1 align-middle"></i>
+                        Format
+                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button
+                            id="btn-mp4"
+                            class="format-option active flex items-center justify-center gap-2 py-3 px-4 border border-surface-200 rounded-xl text-sm font-medium"
+                            onclick="selectFormat('mp4')"
+                        >
+                            <i class="ph ph-video-camera text-lg"></i>
+                            Video MP4
+                        </button>
+                        <button
+                            id="btn-mp3"
+                            class="format-option flex items-center justify-center gap-2 py-3 px-4 border border-surface-200 rounded-xl text-sm font-medium"
+                            onclick="selectFormat('mp3')"
+                        >
+                            <i class="ph ph-music-note text-lg"></i>
+                            Audio MP3
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Download Button -->
+                <button
+                    id="btn-download"
+                    onclick="startDownload()"
+                    class="btn-lift w-full bg-surface-900 hover:bg-surface-800 text-white font-medium py-3.5 px-6 rounded-xl text-base flex items-center justify-center gap-2 transition-colors"
+                >
+                    <i class="ph-bold ph-download-simple text-lg"></i>
+                    Unduh Sekarang
+                </button>
+            </div>
+
+            <!-- Status Area -->
+            <div id="status-area" class="mt-5 hidden">
+                <!-- Status content injected by JS -->
+            </div>
+
+            <!-- Footer info -->
+            <div class="mt-8 text-center animate-slide-up-delay-3">
+                <p class="text-surface-400 text-xs">
+                    <i class="ph ph-info mr-1 align-middle"></i>
+                    File akan otomatis dihapus dari server setelah 5 menit.
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-surface-200 bg-white">
+        <div class="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between text-xs text-surface-400">
+            <span>Dibuat dengan <i class="ph-fill ph-heart text-red-500 align-middle mx-0.5"></i> menggunakan Flask &amp; yt-dlp</span>
+            <span>2026</span>
+        </div>
+    </footer>
+
+    <script>
+        let selectedFormat = "mp4";
+        let currentTaskId = null;
+        let pollInterval = null;
+
+        function selectFormat(fmt) {
+            selectedFormat = fmt;
+            const btnMp4 = document.getElementById("btn-mp4");
+            const btnMp3 = document.getElementById("btn-mp3");
+
+            if (fmt === "mp4") {
+                btnMp4.classList.add("active");
+                btnMp3.classList.remove("active");
+            } else {
+                btnMp3.classList.add("active");
+                btnMp4.classList.remove("active");
+            }
+        }
+
+        function setButtonState(loading) {
+            const btn = document.getElementById("btn-download");
+            if (loading) {
+                btn.disabled = true;
+                btn.classList.add("opacity-60", "cursor-not-allowed");
+                btn.classList.remove("hover:bg-surface-800");
+                btn.innerHTML = `
+                    <div class="spinner"></div>
+                    <span>Memproses...</span>
+                `;
+            } else {
+                btn.disabled = false;
+                btn.classList.remove("opacity-60", "cursor-not-allowed");
+                btn.classList.add("hover:bg-surface-800");
+                btn.innerHTML = `
+                    <i class="ph-bold ph-download-simple text-lg"></i>
+                    Unduh Sekarang
+                `;
+            }
+        }
+
+        function showStatus(html) {
+            const area = document.getElementById("status-area");
+            area.innerHTML = html;
+            area.classList.remove("hidden");
+        }
+
+        function hideStatus() {
+            const area = document.getElementById("status-area");
+            area.classList.add("hidden");
+            area.innerHTML = "";
+        }
+
+        function showLoading(progress, statusText) {
+            const pct = parseInt(progress) || 0;
+            showStatus(`
+                <div class="bg-white border border-surface-200 rounded-2xl p-5 animate-fade-in">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="spinner"></div>
+                        <span class="text-sm font-medium text-surface-700">${statusText}</span>
+                    </div>
+                    <div class="w-full bg-surface-100 rounded-full h-2 overflow-hidden">
+                        <div class="progress-bar-fill bg-surface-900 h-2 rounded-full" style="width: ${pct}%"></div>
+                    </div>
+                    <p class="text-xs text-surface-400 mt-2">${progress}</p>
+                </div>
+            `);
+        }
+
+        function showSuccess(title, taskId) {
+            const displayTitle = title || "Video";
+            showStatus(`
+                <div class="bg-white border border-surface-200 rounded-2xl p-5 animate-fade-in">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center animate-scale-in">
+                            <i class="ph-bold ph-check text-emerald-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-surface-900">Berhasil!</p>
+                            <p class="text-xs text-surface-500 mt-0.5 line-clamp-1">${displayTitle}</p>
+                        </div>
+                    </div>
+                    <a
+                        href="/api/file/${taskId}"
+                        class="btn-lift w-full bg-surface-900 hover:bg-surface-800 text-white font-medium py-3 px-6 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors no-underline"
+                    >
+                        <i class="ph-bold ph-download-simple"></i>
+                        Simpan File
+                    </a>
+                </div>
+            `);
+        }
+
+        function showError(message) {
+            showStatus(`
+                <div class="bg-white border border-red-200 rounded-2xl p-5 animate-fade-in">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="ph-bold ph-x text-red-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold text-red-700">Gagal</p>
+                            <p class="text-xs text-red-500 mt-0.5">${message}</p>
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+
+        async function startDownload() {
+            const url = document.getElementById("url-input").value.trim();
+
+            if (!url) {
+                showError("Masukkan link YouTube terlebih dahulu.");
+                return;
+            }
+
+            if (!url.includes("youtube.com") && !url.includes("youtu.be")) {
+                showError("Link yang dimasukkan bukan URL YouTube yang valid.");
+                return;
+            }
+
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+
+            setButtonState(true);
+            showLoading("0%", "Memulai pengunduhan...");
+
+            try {
+                const res = await fetch("/api/download", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url, format: selectedFormat }),
+                });
+
+                const data = await res.json();
+
+                if (data.error) {
+                    showError(data.error);
+                    setButtonState(false);
+                    return;
+                }
+
+                currentTaskId = data.task_id;
+                pollProgress();
+            } catch (err) {
+                showError("Terjadi kesalahan koneksi ke server.");
+                setButtonState(false);
+            }
+        }
+
+        function pollProgress() {
+            pollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/status/${currentTaskId}`);
+                    const data = await res.json();
+
+                    if (data.status === "downloading") {
+                        showLoading(data.progress, "Mengunduh video...");
+                    } else if (data.status === "processing") {
+                        showLoading("100%", "Memproses file...");
+                    } else if (data.status === "done") {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                        setButtonState(false);
+                        showSuccess(data.title, currentTaskId);
+                    } else if (data.status === "error") {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                        setButtonState(false);
+                        showError(data.error || "Terjadi kesalahan saat mengunduh.");
+                    }
+                } catch (err) {
+                    clearInterval(pollInterval);
+                    pollInterval = null;
+                    setButtonState(false);
+                    showError("Koneksi ke server terputus.");
+                }
+            }, 800);
+        }
+
+        // Allow Enter key to trigger download
+        document.getElementById("url-input").addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                startDownload();
+            }
+        });
+    </script>
+</body>
+</html>
