@@ -467,6 +467,8 @@
                         pollInterval = null;
                         setButtonState(false);
                         showSuccess(data.title, currentTaskId);
+                        const sound = document.getElementById("success-sound");
+                        sound.play().catch(e => console.log("Gagal putar suara:", e)); 
                     } else if (data.status === "error") {
                         clearInterval(pollInterval);
                         pollInterval = null;
@@ -489,5 +491,6 @@
             }
         });
     </script>
+    <audio id="success-sound" src="{{ url_for('static', filename='success.mp3') }}" preload="auto"></audio>
 </body>
 </html>
