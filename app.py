@@ -82,8 +82,8 @@ def download():
                     ],
                     "progress_hooks": [progress_hook(task_id)],
                     "noplaylist": True,
-                    "quiet": True,
-                    "no_warnings": True,
+                    "quiet": False,
+                    "no_warnings": False,
                 }
             else:
                 ydl_opts = {
@@ -144,7 +144,6 @@ def status(task_id):
     if not task:
         return jsonify({"error": "Task tidak ditemukan."}), 404
     return jsonify(task)
-
 
 @app.route("/api/file/<task_id>")
 def get_file(task_id):

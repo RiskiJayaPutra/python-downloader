@@ -189,6 +189,51 @@
         .animate-scale-in {
             animation: scaleIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+
+        /* Gradient progress */
+        .progress-bar-fill {
+            background: linear-gradient(90deg, #3b6cff, #6ea8ff, #3b6cff);
+            background-size: 200% 100%;
+            animation: gradientMove 2s linear infinite;
+        }
+
+        /* Gradient animation */
+        @keyframes gradientMove {
+            0% { background-position: 0% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Glow effect */
+        .progress-glow {
+            box-shadow: 0 0 12px rgba(59, 108, 255, 0.5);
+        }
+
+        /* Shimmer overlay */
+        .progress-shimmer {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                120deg,
+                transparent,
+                rgba(255,255,255,0.5),
+                transparent
+            );
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            100% {
+                left: 100%;
+            }
+        }
+
+        /* Soft colored background */
+        .loading-card {
+            background: linear-gradient(135deg, #f0f4ff, #ffffff);
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -304,6 +349,10 @@
         let selectedFormat = "mp4";
         let currentTaskId = null;
         let pollInterval = null;
+        let targetProgress = 0;
+        let displayProgress = 0;
+        let progressAnimation = null;
+        let currentStatusText = "";
 
         function selectFormat(fmt) {
             selectedFormat = fmt;
@@ -353,23 +402,17 @@
         }
 
         function showLoading(progress, statusText) {
-            const pct = parseInt(progress) || 0;
-            showStatus(`
-                <div class="bg-white border border-surface-200 rounded-2xl p-5 animate-fade-in">
-                    <div class="flex items-center gap-3 mb-3">
-                        <div class="spinner"></div>
-                        <span class="text-sm font-medium text-surface-700">${statusText}</span>
-                    </div>
-                    <div class="w-full bg-surface-100 rounded-full h-2 overflow-hidden">
-                        <div class="progress-bar-fill bg-surface-900 h-2 rounded-full" style="width: ${pct}%"></div>
-                    </div>
-                    <p class="text-xs text-surface-400 mt-2">${progress}</p>
-                </div>
-            `);
+            targetProgress = parseInt(progress) || 0;
+            currentStatusText = statusText;
+
+            if (!progressAnimation) {
+                animateProgress();
+            }
         }
 
         function showSuccess(title, taskId) {
             const displayTitle = title || "Video";
+
             showStatus(`
                 <div class="bg-white border border-surface-200 rounded-2xl p-5 animate-fade-in">
                     <div class="flex items-center gap-3 mb-4">
@@ -381,6 +424,7 @@
                             <p class="text-xs text-surface-500 mt-0.5 line-clamp-1">${displayTitle}</p>
                         </div>
                     </div>
+
                     <a
                         href="/api/file/${taskId}"
                         class="btn-lift w-full bg-surface-900 hover:bg-surface-800 text-white font-medium py-3 px-6 rounded-xl text-sm flex items-center justify-center gap-2 transition-colors no-underline"
@@ -390,6 +434,21 @@
                     </a>
                 </div>
             `);
+
+            // 🔊 PLAY AUDIO (INI YANG SEBELUMNYA KAMU GAK ADA)
+            const sound = document.getElementById("success-sound");
+
+            if (sound) {
+                sound.currentTime = 0;
+
+                sound.play()
+                    .then(() => {
+                        console.log("Audio berhasil diputar");
+                    })
+                    .catch(err => {
+                        console.log("Audio gagal:", err);
+                    });
+            }
         }
 
         function showError(message) {
@@ -409,6 +468,13 @@
         }
 
         async function startDownload() {
+            targetProgress = 0;
+            displayProgress = 0;
+
+            if (progressAnimation) {
+                clearInterval(progressAnimation);
+                progressAnimation = null;
+            }
             const url = document.getElementById("url-input").value.trim();
 
             if (!url) {
@@ -460,29 +526,144 @@
 
                     if (data.status === "downloading") {
                         showLoading(data.progress, "Mengunduh video...");
-                    } else if (data.status === "processing") {
+                    } 
+                    else if (data.status === "processing") {
                         showLoading("100%", "Memproses file...");
-                    } else if (data.status === "done") {
+                    } 
+                    else if (data.status === "done") {
                         clearInterval(pollInterval);
                         pollInterval = null;
+
+                        if (progressAnimation) {
+                            clearInterval(progressAnimation);
+                            progressAnimation = null;
+                        }
+
+                        displayProgress = 100;
+
                         setButtonState(false);
+
+                        // reset UI state
+                        document.getElementById("status-area").dataset.initialized = "";
+
                         showSuccess(data.title, currentTaskId);
-                        const sound = document.getElementById("success-sound");
-                        sound.play().catch(e => console.log("Gagal putar suara:", e)); 
-                    } else if (data.status === "error") {
+                    } 
+                    else if (data.status === "error") {
                         clearInterval(pollInterval);
                         pollInterval = null;
+
                         setButtonState(false);
-                        showError(data.error || "Terjadi kesalahan saat mengunduh.");
+                        showError(data.error || "Terjadi kesalahan.");
                     }
+
                 } catch (err) {
                     clearInterval(pollInterval);
                     pollInterval = null;
+
                     setButtonState(false);
                     showError("Koneksi ke server terputus.");
                 }
             }, 800);
         }
+
+                function animateProgress() {
+            progressAnimation = setInterval(() => {
+
+                if (displayProgress < targetProgress) {
+                    displayProgress += Math.max(0.5, (targetProgress - displayProgress) * 0.1);
+                }
+
+                if (Math.abs(displayProgress - targetProgress) < 0.3) {
+                    displayProgress = targetProgress;
+                }
+
+                renderProgress(displayProgress);
+
+                // ✅ STOP kalau selesai
+                if (displayProgress >= 100 && targetProgress >= 100) {
+                    clearInterval(progressAnimation);
+                    progressAnimation = null;
+                }
+
+            }, 16);
+        }
+
+        function renderProgress(pct) {
+            const area = document.getElementById("status-area");
+
+            if (!area.dataset.initialized) {
+                area.innerHTML = `
+                <div class="loading-card border border-surface-200 rounded-2xl p-5 animate-fade-in">
+
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="spinner"></div>
+                        <span id="status-text" class="text-sm font-semibold text-surface-800"></span>
+                    </div>
+
+                    <div class="relative w-full bg-surface-100 rounded-full h-2 overflow-hidden">
+                        <div id="progress-bar"
+                            class="progress-bar-fill progress-glow h-2 rounded-full"
+                            style="width: 0%">
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center mt-2">
+                        <p id="progress-percent" class="text-xs text-surface-500">0%</p>
+                        <p class="text-xs text-blue-500 animate-pulse-soft">
+                            Sedang diproses...
+                        </p>
+                    </div>
+
+                    <button onclick="cancelDownload()" 
+                        class="mt-4 w-full text-sm text-red-500 border border-red-200 py-2 rounded-lg hover:bg-red-50 transition">
+                        Batalkan
+                    </button>
+
+                </div>
+                `;
+
+                area.classList.remove("hidden");
+                area.dataset.initialized = "true";
+            }
+
+            // ✅ update saja (bukan render ulang)
+            document.getElementById("progress-bar").style.width = pct + "%";
+            document.getElementById("progress-percent").innerText = Math.floor(pct) + "%";
+            document.getElementById("status-text").innerText = currentStatusText;
+        }
+
+       function cancelDownload() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+
+            if (progressAnimation) {
+                clearInterval(progressAnimation);
+                progressAnimation = null;
+            }
+
+            setButtonState(false);
+
+            const area = document.getElementById("status-area");
+            area.classList.add("hidden");
+            area.innerHTML = "";
+            area.dataset.initialized = "";
+
+            currentTaskId = null;
+            targetProgress = 0;
+            displayProgress = 0;
+        }
+
+        document.addEventListener("click", () => {
+            const sound = document.getElementById("success-sound");
+            if (sound) {
+                sound.play().then(() => {
+                    sound.pause();
+                    sound.currentTime = 0;
+                }).catch(() => {});
+            }
+        }, { once: true });
 
         // Allow Enter key to trigger download
         document.getElementById("url-input").addEventListener("keydown", function(e) {
@@ -491,6 +672,8 @@
             }
         });
     </script>
-    <audio id="success-sound" src="{{ url_for('static', filename='success.mp3') }}" preload="auto"></audio>
+    <audio id="success-sound" preload="auto">
+    <source src="{{ url_for('static', filename='success.mp3') }}" type="audio/mpeg">
+</audio>
 </body>
 </html>
