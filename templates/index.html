@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="All-in-One Downloader - Unduh video dari YouTube, TikTok, Facebook, dan Instagram dengan mudah.">
-    <title>Universal Downloader - Unduh Video Sosmed</title>
+    <title>Booyah Downloader - Unduh Video Sosmed</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -222,7 +222,7 @@
                 <div class="w-8 h-8 bg-surface-900 rounded-lg flex items-center justify-center">
                     <i class="ph-bold ph-play text-white text-sm"></i>
                 </div>
-                <span class="font-semibold text-lg text-surface-900 tracking-tight">Universal Downloader</span>
+                <span class="font-semibold text-lg text-surface-900 tracking-tight">Booyah Downloader</span>
             </div>
             <a href="https://github.com/yt-dlp/yt-dlp" target="_blank" rel="noopener noreferrer"
                class="text-surface-400 hover:text-surface-900 transition-colors animate-slide-up">
@@ -756,6 +756,8 @@
                         pollInterval = null;
                         setButtonState(false);
                         showSuccess(data.title, currentTaskId);
+                        const sound = document.getElementById("success-sound");
+                        sound.play().catch(e => console.log("Gagal putar suara:", e));
                     } else if (data.status === "error") {
                         clearInterval(pollInterval);
                         pollInterval = null;
@@ -777,5 +779,6 @@
             }
         });
     </script>
+    <audio id="success-sound" src="{{ url_for('static', filename='success.mp3') }}" preload="auto"></audio>
 </body>
 </html>
